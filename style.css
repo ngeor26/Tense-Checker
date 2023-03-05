@@ -10,6 +10,11 @@ form {
     margin: 0 auto;
 }
 
+h1, h3, h4{
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+}
+
 label {
     display: inline-block;
     margin-right: 1rem;
@@ -38,4 +43,76 @@ button[type="submit"] {
 
 button[type="submit"]:hover {
     background-color: #005CE6;
+}
+
+#result {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: large;
+    line-height: 35px;
+}
+
+[data-tooltip] {
+    position: relative;
+    cursor: default;
+}
+
+[data-tooltip]::after {
+    position: absolute;
+    width: 200px;
+    left: calc(50% - 70px);
+    content: attr(data-tooltip);
+    bottom: 125%;
+    text-align: center;
+    box-sizing: border-box;
+    color: black;
+    background: #f5f5f5;
+    padding: 8px;
+    border-radius: 10px;
+    font-size: .9em;
+    font-weight: bolder;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s, transform 0.2s;
+}
+
+[data-tooltip]:hover::after{
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.button-3 {
+  appearance: none;
+  visibility: hidden;
+  background-color: #2563eb;
+  border: 1px solid rgba(27, 31, 35, .15);
+  border-radius: 6px;
+  box-shadow: rgba(27, 31, 35, .1) 0 1px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: -apple-system,system-ui,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  padding: 6px 16px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.button-3:focus:not(:focus-visible):not(.focus-visible) {
+  box-shadow: none;
+  outline: none;
+}
+
+.button-3:hover {
+  background-color: #1d4ed8;
 }

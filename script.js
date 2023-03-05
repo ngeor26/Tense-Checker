@@ -7,24 +7,35 @@ function getTense(sentence){
     const pastSimilarity = JaroWrinker(sentence, past)
     const presentSimilarity = JaroWrinker(sentence, present)
     const futureSimilarity = JaroWrinker(sentence, future)
-    // if(sentence.includes('have to')){
-    //     return 'present'
-    // }
-    // if(sentence === past){
-    //     return 'past'
-    // }else if(sentence === present){
-    //     return 'present'
-    // }else if(sentence === future){
-    //     return 'future'
-    // }
-    // return 'error'
     const greatest = Math.max(pastSimilarity, presentSimilarity, futureSimilarity)
-    if(greatest == pastSimilarity){
-        return 'past'
-    }else if(greatest == futureSimilarity){
-        return 'future'
-    }else if(greatest == presentSimilarity){
-        return 'present'
+    console.log(sentence)
+    console.log(present, presentSimilarity)
+    console.log(past, pastSimilarity)
+    console.log(future, futureSimilarity)
+    if(displayRadioValue() == 'past'){
+        if(greatest == pastSimilarity){
+            return 'past'
+        }else if(greatest == futureSimilarity){
+            return 'future'
+        }else if(greatest == presentSimilarity){
+            return 'present'
+        }
+    }else if(displayRadioValue() == 'present'){
+        if(greatest == presentSimilarity){
+            return 'present'
+        }else if(greatest == pastSimilarity){
+            return 'past'
+        }else if(greatest == futureSimilarity){
+            return 'future'
+        }
+    }else if(displayRadioValue() == 'future'){
+        if(greatest == futureSimilarity){
+            return 'future'
+        }else if(greatest == presentSimilarity){
+            return 'present'
+        }else if(greatest == pastSimilarity){
+            return 'past'
+        }
     }
     return 'error'
 }
@@ -47,7 +58,12 @@ document.querySelector('form').addEventListener('submit', (e) => {
     const tenseSelection = displayRadioValue()
     const text = document.querySelector("#essay").value
     const textArr = splitText(text)
-    console.log(findTenseErrors(textArr, tenseSelection))
+    const errors = findTenseErrors(textArr, tenseSelection)
+    for(error of errors){
+        //console.log(error)
+        //console.log(nlp(error).sentences().toPresentTense().text())
+    }
+    displayErrors(errors, textArr)
 })
 
 function displayRadioValue() {
@@ -63,11 +79,84 @@ function displayRadioValue() {
 function findTenseErrors(textArr, tense){
     const errors = []
     for(let i = 0; i < textArr.length; i++){
-        if(getTense(textArr[i]) != tense){
-            errors.push(i)
+        if(getTense(textArr[i]) != tense && !textArr[i].includes(`“`)){
+            errors.push(textArr[i])
+        }
+        if(textArr[i].includes(`“`)){
+            for(let j = i; j < textArr.length; j++){
+                if(textArr[j].includes(`”`)){
+                    i = j
+                }
+            }
         }
     }
     return errors
+}
+
+function toTense(sentence){
+    const tense = displayRadioValue()
+    if(tense == 'past'){
+        return nlp(sentence).sentences().toPastTense().text()
+    }else if(tense == 'present'){
+        return nlp(sentence).sentences().toPresentTense().text()
+    }else if(tense == 'future'){
+        return nlp(sentence).sentences().toFutureTense().text()
+    }
+}
+
+let errorCount;
+const errorMessage = document.querySelector('h3')
+
+function displayErrors(errors, textArr){
+    document.querySelector("form").style.display = 'none'
+    document.querySelector('.button-3').style.visibility = 'visible'
+    document.querySelector('.button-3').addEventListener('click', function(){
+        location.reload()
+    })
+    let result = document.querySelector("#result")
+    errorMessage.innerHTML =  `${errors.length} errors`
+    document.querySelector('h4').innerHTML = 'Click on error to correct it or right-click on error to ignore' + '<br><br>' + 'Zoom out if tooltip suggestion is off page'
+    for(let i = 0; i < textArr.length; i++){
+        for(let j = 0; j < errors.length; j++){
+            if(textArr[i] == errors[j]){
+                const tooltip = toTense(textArr[i])
+                result.innerHTML += `<span id="text${i}" class='incorrect'>${textArr[i]}</span>` + ' '
+                document.querySelector(`#text${i}`).setAttribute('data-tooltip', tooltip)
+                document.querySelector(`#text${i}`).style.backgroundColor = '#ff6161'
+                break;
+            }
+            if(j == errors.length - 1){
+                result.innerHTML += `<span>${textArr[i]} </span>`
+            }
+        }
+    }
+    errorCount = errors.length
+    document.querySelectorAll('.incorrect').forEach(element => {
+        element.addEventListener('click', correctSentence)
+        element.addEventListener('contextmenu', removeCorrection)
+    });
+}
+
+function correctSentence(){
+    this.innerHTML = this.getAttribute('data-tooltip')
+    this.style.backgroundColor = 'transparent'
+    errorCount--
+    errorMessage.innerHTML = `${errorCount} errors`
+    this.removeAttribute('class')
+    this.removeAttribute('data-tooltip')
+    this.removeEventListener('click', correctSentence)
+    this.removeEventListener('contextmenu', removeCorrection)
+}
+
+function removeCorrection(e){
+    e.preventDefault()
+    this.style.backgroundColor = 'transparent'
+    errorCount--
+    errorMessage.innerHTML = `${errorCount} errors`
+    this.removeAttribute('class')
+    this.removeAttribute('data-tooltip')
+    this.removeEventListener('click', correctSentence)
+    this.removeEventListener('contextmenu', removeCorrection)
 }
 
 JaroWrinker  = function (s1, s2) {
