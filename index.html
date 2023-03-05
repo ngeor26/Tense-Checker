@@ -6,17 +6,17 @@
   </head>
   <body>
     <h1>Tense Checker</h1>
-    <div>
+    <form>
       <p>
         <label>Essay:</label>
         <br>
-        <textarea id="essay" name="essay" rows="10" cols="50"></textarea>
+        <textarea id="essay" name="essay" rows="10" cols="50" required></textarea>
       </p>
       <p>
         <label>Tense:</label>
         <br>
         <label>
-          <input type="radio" name="tense" value="past">
+          <input type="radio" name="tense" value="past" required>
           Past
         </label>
         <br>
@@ -33,7 +33,7 @@
       <p>
         <button type="submit" id="submit">Check Tense</button>
       </p>
-    </div>
+    </form>
     <script src="https://unpkg.com/compromise"></script>  
     <script src="script.js"></script>
   </body>
