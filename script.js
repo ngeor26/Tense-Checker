@@ -1,4 +1,13 @@
-function getTense(sentence){
+async function getTense(sentence){
+    const targetTense = displayRadioValue()
+    if(targetTense == 'present' || targetTense == 'past'){
+        const res = await (await fetch('https://tense-boi.onrender.com/' + sentence)).json()
+        const posArr = res.taggedWords
+        console.log(posArr)
+        posArr.forEach((element, index) => {
+
+        })
+    }
     sentence = sentence.trim()
     const sent = nlp(sentence).sentences()
     const past = sent.toPastTense().text()
@@ -53,18 +62,16 @@ function splitText(text){
     return text;
 }
   
-document.querySelector('form').addEventListener('submit', (e) => {
+document.querySelector('form').addEventListener('submit', runChecks)
+
+async function runChecks(e){
     e.preventDefault()
     const tenseSelection = displayRadioValue()
     const text = document.querySelector("#essay").value
     const textArr = splitText(text)
-    const errors = findTenseErrors(textArr, tenseSelection)
-    for(error of errors){
-        //console.log(error)
-        //console.log(nlp(error).sentences().toPresentTense().text())
-    }
+    const errors = await findTenseErrors(textArr, tenseSelection)
     displayErrors(errors, textArr)
-})
+}
 
 function displayRadioValue() {
     var ele = document.getElementsByName('tense');
@@ -76,21 +83,44 @@ function displayRadioValue() {
     }
 }
 
-function findTenseErrors(textArr, tense){
+async function findTenseErrors(textArr, tense){
     const errors = []
-    for(let i = 0; i < textArr.length; i++){
-        if(getTense(textArr[i]) != tense && !textArr[i].includes(`“`)){
-            errors.push(textArr[i])
+    if(tense == 'present' || tense == 'past'){
+        for(let i = 0; i < textArr.length; i++){
+            const res = await (await fetch('https://tense-boi.onrender.com/' + textArr[i].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim())).json()
+            const posArr = res.taggedWords
+            posArr.forEach((element, index) => {
+                if(tenseFromPOS(element.tag) != tense){
+                    errors.push(element.token)
+                }
+            })
         }
-        if(textArr[i].includes(`“`)){
-            for(let j = i; j < textArr.length; j++){
-                if(textArr[j].includes(`”`)){
-                    i = j
+    }else{
+        for(let i = 0; i < textArr.length; i++){
+            if(getTense(textArr[i]) != tense && !textArr[i].includes(`“`)){
+                errors.push(textArr[i])
+            }
+            if(textArr[i].includes(`“`)){
+                for(let j = i; j < textArr.length; j++){
+                    if(textArr[j].includes(`”`)){
+                        i = j
+                    }
                 }
             }
         }
     }
+    console.log(errors)
     return errors
+}
+
+function tenseFromPOS(POS){
+    if(POS == 'VBD'){
+        return 'past';
+    }else if((displayRadioValue == 'past' || displayRadioValue() == 'present') && POS == 'VBN'){
+        return displayRadioValue()
+    }else{
+        return 'present';
+    }
 }
 
 function toTense(sentence){
@@ -116,17 +146,39 @@ function displayErrors(errors, textArr){
     let result = document.querySelector("#result")
     errorMessage.innerHTML =  `${errors.length} errors`
     document.querySelector('h4').innerHTML = 'Click on error to correct it or right-click on error to ignore' + '<br><br>' + 'Zoom out if tooltip suggestion is off page'
-    for(let i = 0; i < textArr.length; i++){
-        for(let j = 0; j < errors.length; j++){
-            if(textArr[i] == errors[j]){
-                const tooltip = toTense(textArr[i])
-                result.innerHTML += `<span id="text${i}" class='incorrect'>${textArr[i]}</span>` + ' '
-                document.querySelector(`#text${i}`).setAttribute('data-tooltip', tooltip)
-                document.querySelector(`#text${i}`).style.backgroundColor = '#ff6161'
-                break;
+    if(displayRadioValue() == 'future'){
+        for(let i = 0; i < textArr.length; i++){
+            for(let j = 0; j < errors.length; j++){
+                if(textArr[i] == errors[j]){
+                    const tooltip = toTense(textArr[i])
+                    result.innerHTML += `<span id="text${i}" class='incorrect'>${textArr[i]}</span>` + ' '
+                    document.querySelector(`#text${i}`).setAttribute('data-tooltip', tooltip)
+                    document.querySelector(`#text${i}`).style.backgroundColor = '#ff6161'
+                    break;
+                }
+                if(j == errors.length - 1){
+                    result.innerHTML += `<span>${textArr[i]} </span>`
+                }
             }
-            if(j == errors.length - 1){
-                result.innerHTML += `<span>${textArr[i]} </span>`
+        }
+    }else{
+        console.log("cheese")
+        for(let i = 0; i < textArr.length; i++){
+            const words = textArr[i].split(" ")
+            for(let k = 0; k < words.length; k++){
+                for(let j = 0; j < errors.length; j++){
+                    if(words[k] == errors[j]){
+                        console.log(words[k])
+                        const tooltip = toTense(words[k])
+                        result.innerHTML += `<span id="text${k}" class='incorrect'>${words[k]}</span>` + ' '
+                        document.querySelector(`#text${k}`).setAttribute('data-tooltip', tooltip)
+                        document.querySelector(`#text${k}`).style.backgroundColor = '#ff6161'
+                        break;
+                    }
+                }
+                if(k == words.length - 1){
+                    result.innerHTML += `<span>${textArr[i]} </span>`
+                }
             }
         }
     }
