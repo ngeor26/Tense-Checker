@@ -1,13 +1,5 @@
-async function getTense(sentence){
+function getTense(sentence){
     const targetTense = displayRadioValue()
-    if(targetTense == 'present' || targetTense == 'past'){
-        const res = await (await fetch('https://tense-boi.onrender.com/' + sentence)).json()
-        const posArr = res.taggedWords
-        console.log(posArr)
-        posArr.forEach((element, index) => {
-
-        })
-    }
     sentence = sentence.trim()
     const sent = nlp(sentence).sentences()
     const past = sent.toPastTense().text()
@@ -90,7 +82,8 @@ async function findTenseErrors(textArr, tense){
             const res = await (await fetch('https://tense-boi.onrender.com/' + textArr[i].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim())).json()
             const posArr = res.taggedWords
             posArr.forEach((element, index) => {
-                if(tenseFromPOS(element.tag) != tense){
+                const verbTense = tenseFromPOS(element.tag)
+                if(verbTense != tense){
                     errors.push(element.token)
                 }
             })
@@ -162,22 +155,22 @@ function displayErrors(errors, textArr){
             }
         }
     }else{
-        console.log("cheese")
+        console.log(textArr.length)
+        let counter = 0;
         for(let i = 0; i < textArr.length; i++){
             const words = textArr[i].split(" ")
+            console.log(words)
             for(let k = 0; k < words.length; k++){
-                for(let j = 0; j < errors.length; j++){
-                    if(words[k] == errors[j]){
-                        console.log(words[k])
-                        const tooltip = toTense(words[k])
-                        result.innerHTML += `<span id="text${k}" class='incorrect'>${words[k]}</span>` + ' '
-                        document.querySelector(`#text${k}`).setAttribute('data-tooltip', tooltip)
-                        document.querySelector(`#text${k}`).style.backgroundColor = '#ff6161'
-                        break;
-                    }
-                }
-                if(k == words.length - 1){
-                    result.innerHTML += `<span>${textArr[i]} </span>`
+                console.log(words[k])
+                if(errors.includes(words[k].trim())){
+                    console.log('True')
+                    const tooltip = toTense(words[k])
+                    counter++
+                    result.innerHTML += `<span id="text${counter}" class='incorrect'>${words[k]}</span>` + ' '
+                    document.querySelector(`#text${counter}`).setAttribute('data-tooltip', tooltip)
+                    document.querySelector(`#text${counter}`).style.backgroundColor = '#ff6161'
+                }else{
+                    result.innerHTML += `<span>${words[k]} </span>`
                 }
             }
         }
