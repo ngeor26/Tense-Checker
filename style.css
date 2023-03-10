@@ -49,6 +49,8 @@ button[type="submit"]:hover {
     font-family: 'Times New Roman', Times, serif;
     font-size: large;
     line-height: 35px;
+    margin-inline: 20px;
+    text-align: center;
 }
 
 [data-tooltip] {

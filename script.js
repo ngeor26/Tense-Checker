@@ -1,5 +1,74 @@
+document.querySelector('form').addEventListener('submit', runChecks)
+
+async function runChecks(e){
+    e.preventDefault()
+    document.querySelector('body').style.cursor = 'wait'
+    const tenseSelection = displayRadioValue()
+    const text = document.querySelector("#essay").value
+    const textArr = splitText(text)
+    const errors = await findTenseErrors(textArr, tenseSelection, text)
+    displayErrors(errors, textArr)
+}
+
+function displayRadioValue() {
+    var ele = document.getElementsByName('tense');
+      
+    for(i = 0; i < ele.length; i++) {
+        if(ele[i].checked){
+            return ele[i].value;
+        }
+    }
+}
+
+function splitText(text){
+    text = text.replace(/([.?!])\s*(?=[A-Z])/g, "$1|").split("|")
+    return text;
+}
+
+const timer = ms => new Promise(res => setTimeout(res, ms))
+
+async function findTenseErrors(textArr, tense, text){
+    const errors = []
+    const length = text.match(/(\w+)/g).length
+    if(tense == 'present' || tense == 'past'){
+        for(let i = 0; i < length; i+=1000){
+            let res;
+            if(i + 1000 > length){
+                res = await (await fetch('https://plum-clean-gecko.cyclic.app/' + getWords(text, i, length))).json()
+            }else{
+                res = await (await fetch('https://plum-clean-gecko.cyclic.app/' + getWords(text, i, i+1000))).json()
+            }
+            const posArr = res.taggedWords
+            posArr.forEach((element, index) => {
+                console.log()
+                const verbTense = tenseFromPOS(element.tag)
+                if(verbTense != tense){
+                    errors.push(element.token)
+                }
+            })
+            if(i > 0 && i % 5000 == 0){
+                await timer(1000)
+            }
+        }
+    }else{
+        for(let i = 0; i < textArr.length; i++){
+            if(getTense(textArr[i]) != tense && !textArr[i].includes(`“`)){
+                errors.push(textArr[i])
+            }
+            if(textArr[i].includes(`“`)){
+                for(let j = i; j < textArr.length; j++){
+                    if(textArr[j].includes(`”`)){
+                        i = j
+                    }
+                }
+            }
+        }
+    }
+    console.log(errors)
+    return errors
+}
+
 function getTense(sentence){
-    const targetTense = displayRadioValue()
     sentence = sentence.trim()
     const sent = nlp(sentence).sentences()
     const past = sent.toPastTense().text()
@@ -41,6 +110,18 @@ function getTense(sentence){
     return 'error'
 }
 
+function tenseFromPOS(POS){
+    if(POS == 'VBD'){
+        return 'past';
+    }else if((displayRadioValue() == 'past' || displayRadioValue() == 'present') && POS == 'VBN'){
+        return displayRadioValue()
+    }else if(POS == 'VB' || POS == 'VBG' || POS == 'VBP' || POS == 'VBZ'){
+        return 'present';
+    }else{
+        return displayRadioValue()
+    }
+}
+
 function removeQuotedSentences(input) {
     while(input.includes('"')){
         const extractQuote = input.match(/(?:"[^"]*"|^[^"]*$)/)[0]
@@ -49,71 +130,8 @@ function removeQuotedSentences(input) {
     return input;
 }
 
-function splitText(text){
-    text = text.replace(/([.?!])\s*(?=[A-Z])/g, "$1|").split("|")
-    return text;
-}
-  
-document.querySelector('form').addEventListener('submit', runChecks)
-
-async function runChecks(e){
-    e.preventDefault()
-    const tenseSelection = displayRadioValue()
-    const text = document.querySelector("#essay").value
-    const textArr = splitText(text)
-    const errors = await findTenseErrors(textArr, tenseSelection)
-    displayErrors(errors, textArr)
-}
-
-function displayRadioValue() {
-    var ele = document.getElementsByName('tense');
-      
-    for(i = 0; i < ele.length; i++) {
-        if(ele[i].checked){
-            return ele[i].value;
-        }
-    }
-}
-
-async function findTenseErrors(textArr, tense){
-    const errors = []
-    if(tense == 'present' || tense == 'past'){
-        for(let i = 0; i < textArr.length; i++){
-            const res = await (await fetch('https://plum-clean-gecko.cyclic.app/' + textArr[i].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim())).json()
-            const posArr = res.taggedWords
-            posArr.forEach((element, index) => {
-                const verbTense = tenseFromPOS(element.tag)
-                if(verbTense != tense){
-                    errors.push(element.token)
-                }
-            })
-        }
-    }else{
-        for(let i = 0; i < textArr.length; i++){
-            if(getTense(textArr[i]) != tense && !textArr[i].includes(`“`)){
-                errors.push(textArr[i])
-            }
-            if(textArr[i].includes(`“`)){
-                for(let j = i; j < textArr.length; j++){
-                    if(textArr[j].includes(`”`)){
-                        i = j
-                    }
-                }
-            }
-        }
-    }
-    console.log(errors)
-    return errors
-}
-
-function tenseFromPOS(POS){
-    if(POS == 'VBD'){
-        return 'past';
-    }else if((displayRadioValue == 'past' || displayRadioValue() == 'present') && POS == 'VBN'){
-        return displayRadioValue()
-    }else{
-        return 'present';
-    }
+function getWords(str, start, limit) {
+    return str.split(/\s+/).slice(start,limit).join(" ");
 }
 
 function toTense(sentence){
@@ -155,15 +173,11 @@ function displayErrors(errors, textArr){
             }
         }
     }else{
-        console.log(textArr.length)
         let counter = 0;
         for(let i = 0; i < textArr.length; i++){
             const words = textArr[i].split(" ")
-            console.log(words)
             for(let k = 0; k < words.length; k++){
-                console.log(words[k])
-                if(errors.includes(words[k].trim())){
-                    console.log('True')
+                if(errors.includes(words[k].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim())){
                     const tooltip = toTense(words[k])
                     counter++
                     result.innerHTML += `<span id="text${counter}" class='incorrect'>${words[k]}</span>` + ' '
@@ -172,7 +186,7 @@ function displayErrors(errors, textArr){
                 }else{
                     result.innerHTML += `<span>${words[k]} </span>`
                 }
-            }fetch
+            }
         }
     }
     result.innerHTML += '<div id="fixwrapper"><button id="fixall">Resolve All Errors</button></div>'
@@ -182,6 +196,7 @@ function displayErrors(errors, textArr){
         element.addEventListener('contextmenu', removeCorrection)
     });
     document.querySelector('#fixall').addEventListener('click', resolveAll)
+    document.querySelector('body').style.cursor = 'auto'
 }
 
 function resolveAll(){
