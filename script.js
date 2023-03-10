@@ -79,7 +79,7 @@ async function findTenseErrors(textArr, tense){
     const errors = []
     if(tense == 'present' || tense == 'past'){
         for(let i = 0; i < textArr.length; i++){
-            const res = await (await fetch('https://tense-boi.onrender.com/' + textArr[i].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim())).json()
+            const res = await (await fetch('https://plum-clean-gecko.cyclic.app/' + textArr[i].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim())).json()
             const posArr = res.taggedWords
             posArr.forEach((element, index) => {
                 const verbTense = tenseFromPOS(element.tag)
@@ -172,14 +172,29 @@ function displayErrors(errors, textArr){
                 }else{
                     result.innerHTML += `<span>${words[k]} </span>`
                 }
-            }
+            }fetch
         }
     }
+    result.innerHTML += '<div id="fixwrapper"><button id="fixall">Resolve All Errors</button></div>'
     errorCount = errors.length
     document.querySelectorAll('.incorrect').forEach(element => {
         element.addEventListener('click', correctSentence)
         element.addEventListener('contextmenu', removeCorrection)
     });
+    document.querySelector('#fixall').addEventListener('click', resolveAll)
+}
+
+function resolveAll(){
+    document.querySelectorAll('.incorrect').forEach(element => {
+        element.innerHTML = element.getAttribute('data-tooltip')
+        element.style.backgroundColor = 'transparent'
+        errorCount--
+        errorMessage.innerHTML = `${errorCount} errors`
+        element.removeAttribute('class')
+        element.removeAttribute('data-tooltip')
+        element.removeEventListener('click', correctSentence)
+        element.removeEventListener('contextmenu', removeCorrection)
+    })
 }
 
 function correctSentence(){
