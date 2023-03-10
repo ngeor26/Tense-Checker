@@ -2,7 +2,7 @@ document.querySelector('form').addEventListener('submit', runChecks)
 
 async function runChecks(e){
     e.preventDefault()
-    document.querySelector('body').style.cursor = 'wait'
+    document.querySelector('body').setAttribute('id', 'loading')
     const tenseSelection = displayRadioValue()
     const text = document.querySelector("#essay").value
     const textArr = splitText(text)
@@ -196,7 +196,7 @@ function displayErrors(errors, textArr){
         element.addEventListener('contextmenu', removeCorrection)
     });
     document.querySelector('#fixall').addEventListener('click', resolveAll)
-    document.querySelector('body').style.cursor = 'auto'
+    document.querySelector('body').removeAttribute('id')
 }
 
 function resolveAll(){
