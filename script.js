@@ -139,20 +139,43 @@ function displayErrors(errors, textArr){
     let result = document.querySelector("#result")
     errorMessage.innerHTML =  `${errors.length} errors`
     document.querySelector('h4').innerHTML = 'Click on error to correct it or right-click on error to ignore' + '<br><br>' + 'Zoom out if tooltip suggestion is off page'
-    for(let i = 0; i < textArr.length; i++){
-        for(let j = 0; j < errors.length; j++){
-            if(textArr[i] == errors[j]){
-                const tooltip = toTense(textArr[i])
-                result.innerHTML += `<span id="text${i}" class='incorrect'>${textArr[i]}</span>` + ' '
-                document.querySelector(`#text${i}`).setAttribute('data-tooltip', tooltip)
-                document.querySelector(`#text${i}`).style.backgroundColor = '#ff6161'
-                break;
-            }
-            if(j == errors.length - 1){
-                result.innerHTML += `<span>${textArr[i]} </span>`
+    if(displayRadioValue() == 'future'){
+        for(let i = 0; i < textArr.length; i++){
+            for(let j = 0; j < errors.length; j++){
+                if(textArr[i] == errors[j]){
+                    const tooltip = toTense(textArr[i])
+                    result.innerHTML += `<span id="text${i}" class='incorrect'>${textArr[i]}</span>` + ' '
+                    document.querySelector(`#text${i}`).setAttribute('data-tooltip', tooltip)
+                    document.querySelector(`#text${i}`).style.backgroundColor = '#ff6161'
+                    break;
+                }
+                if(j == errors.length - 1){
+                    result.innerHTML += `<span>${textArr[i]} </span>`
+                }
             }
         }
+    }else{
+        console.log(textArr.length)
+        let counter = 0;
+        for(let i = 0; i < textArr.length; i++){
+            const words = textArr[i].split(" ")
+            console.log(words)
+            for(let k = 0; k < words.length; k++){
+                console.log(words[k])
+                if(errors.includes(words[k].trim())){
+                    console.log('True')
+                    const tooltip = toTense(words[k])
+                    counter++
+                    result.innerHTML += `<span id="text${counter}" class='incorrect'>${words[k]}</span>` + ' '
+                    document.querySelector(`#text${counter}`).setAttribute('data-tooltip', tooltip)
+                    document.querySelector(`#text${counter}`).style.backgroundColor = '#ff6161'
+                }else{
+                    result.innerHTML += `<span>${words[k]} </span>`
+                }
+            }fetch
+        }
     }
+    result.innerHTML += '<div id="fixwrapper"><button id="fixall">Resolve All Errors</button></div>'
     errorCount = errors.length
     document.querySelectorAll('.incorrect').forEach(element => {
         element.addEventListener('click', correctSentence)
