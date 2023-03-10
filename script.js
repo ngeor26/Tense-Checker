@@ -1,4 +1,5 @@
 function getTense(sentence){
+    const targetTense = displayRadioValue()
     sentence = sentence.trim()
     const sent = nlp(sentence).sentences()
     const past = sent.toPastTense().text()
@@ -53,18 +54,16 @@ function splitText(text){
     return text;
 }
   
-document.querySelector('form').addEventListener('submit', (e) => {
+document.querySelector('form').addEventListener('submit', runChecks)
+
+async function runChecks(e){
     e.preventDefault()
     const tenseSelection = displayRadioValue()
     const text = document.querySelector("#essay").value
     const textArr = splitText(text)
-    const errors = findTenseErrors(textArr, tenseSelection)
-    for(error of errors){
-        //console.log(error)
-        //console.log(nlp(error).sentences().toPresentTense().text())
-    }
+    const errors = await findTenseErrors(textArr, tenseSelection)
     displayErrors(errors, textArr)
-})
+}
 
 function displayRadioValue() {
     var ele = document.getElementsByName('tense');
@@ -76,21 +75,45 @@ function displayRadioValue() {
     }
 }
 
-function findTenseErrors(textArr, tense){
+async function findTenseErrors(textArr, tense){
     const errors = []
-    for(let i = 0; i < textArr.length; i++){
-        if(getTense(textArr[i]) != tense && !textArr[i].includes(`“`)){
-            errors.push(textArr[i])
+    if(tense == 'present' || tense == 'past'){
+        for(let i = 0; i < textArr.length; i++){
+            const res = await (await fetch('https://plum-clean-gecko.cyclic.app/' + textArr[i].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim())).json()
+            const posArr = res.taggedWords
+            posArr.forEach((element, index) => {
+                const verbTense = tenseFromPOS(element.tag)
+                if(verbTense != tense){
+                    errors.push(element.token)
+                }
+            })
         }
-        if(textArr[i].includes(`“`)){
-            for(let j = i; j < textArr.length; j++){
-                if(textArr[j].includes(`”`)){
-                    i = j
+    }else{
+        for(let i = 0; i < textArr.length; i++){
+            if(getTense(textArr[i]) != tense && !textArr[i].includes(`“`)){
+                errors.push(textArr[i])
+            }
+            if(textArr[i].includes(`“`)){
+                for(let j = i; j < textArr.length; j++){
+                    if(textArr[j].includes(`”`)){
+                        i = j
+                    }
                 }
             }
         }
     }
+    console.log(errors)
     return errors
+}
+
+function tenseFromPOS(POS){
+    if(POS == 'VBD'){
+        return 'past';
+    }else if((displayRadioValue == 'past' || displayRadioValue() == 'present') && POS == 'VBN'){
+        return displayRadioValue()
+    }else{
+        return 'present';
+    }
 }
 
 function toTense(sentence){
@@ -116,48 +139,39 @@ function displayErrors(errors, textArr){
     let result = document.querySelector("#result")
     errorMessage.innerHTML =  `${errors.length} errors`
     document.querySelector('h4').innerHTML = 'Click on error to correct it or right-click on error to ignore' + '<br><br>' + 'Zoom out if tooltip suggestion is off page'
-    if(displayRadioValue() == 'future'){
-        for(let i = 0; i < textArr.length; i++){
-            for(let j = 0; j < errors.length; j++){
-                if(textArr[i] == errors[j]){
-                    const tooltip = toTense(textArr[i])
-                    result.innerHTML += `<span id="text${i}" class='incorrect'>${textArr[i]}</span>` + ' '
-                    document.querySelector(`#text${i}`).setAttribute('data-tooltip', tooltip)
-                    document.querySelector(`#text${i}`).style.backgroundColor = '#ff6161'
-                    break;
-                }
-                if(j == errors.length - 1){
-                    result.innerHTML += `<span>${textArr[i]} </span>`
-                }
+    for(let i = 0; i < textArr.length; i++){
+        for(let j = 0; j < errors.length; j++){
+            if(textArr[i] == errors[j]){
+                const tooltip = toTense(textArr[i])
+                result.innerHTML += `<span id="text${i}" class='incorrect'>${textArr[i]}</span>` + ' '
+                document.querySelector(`#text${i}`).setAttribute('data-tooltip', tooltip)
+                document.querySelector(`#text${i}`).style.backgroundColor = '#ff6161'
+                break;
             }
-        }
-    }else{
-        console.log(textArr.length)
-        let counter = 0;
-        for(let i = 0; i < textArr.length; i++){
-            const words = textArr[i].split(" ")
-            console.log(words)
-            for(let k = 0; k < words.length; k++){
-                console.log(words[k])
-                if(errors.includes(words[k].trim())){
-                    console.log('True')
-                    const tooltip = toTense(words[k])
-                    counter++
-                    result.innerHTML += `<span id="text${counter}" class='incorrect'>${words[k]}</span>` + ' '
-                    document.querySelector(`#text${counter}`).setAttribute('data-tooltip', tooltip)
-                    document.querySelector(`#text${counter}`).style.backgroundColor = '#ff6161'
-                }else{
-                    result.innerHTML += `<span>${words[k]} </span>`
-                }
+            if(j == errors.length - 1){
+                result.innerHTML += `<span>${textArr[i]} </span>`
             }
         }
     }
-    result.innerHTML += '<div id="fixwrapper"><button id="fixall">Resolve All Errors</button></div>'
     errorCount = errors.length
     document.querySelectorAll('.incorrect').forEach(element => {
         element.addEventListener('click', correctSentence)
         element.addEventListener('contextmenu', removeCorrection)
     });
+    document.querySelector('#fixall').addEventListener('click', resolveAll)
+}
+
+function resolveAll(){
+    document.querySelectorAll('.incorrect').forEach(element => {
+        element.innerHTML = element.getAttribute('data-tooltip')
+        element.style.backgroundColor = 'transparent'
+        errorCount--
+        errorMessage.innerHTML = `${errorCount} errors`
+        element.removeAttribute('class')
+        element.removeAttribute('data-tooltip')
+        element.removeEventListener('click', correctSentence)
+        element.removeEventListener('contextmenu', removeCorrection)
+    })
 }
 
 function correctSentence(){
