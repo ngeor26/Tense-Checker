@@ -147,6 +147,7 @@ function toTense(sentence){
 
 let errorCount;
 const errorMessage = document.querySelector('h3')
+let outText;
 
 function displayErrors(errors, textArr){
     document.querySelector("form").style.display = 'none'
@@ -155,7 +156,6 @@ function displayErrors(errors, textArr){
         location.reload()
     })
     let result = document.querySelector("#result")
-    errorMessage.innerHTML =  `${errors.length} errors`
     document.querySelector('h4').innerHTML = 'Click on error to correct it or right-click on error to ignore' + '<br><br>' + 'Zoom out if tooltip suggestion is off page'
     if(displayRadioValue() == 'future'){
         for(let i = 0; i < textArr.length; i++){
@@ -175,28 +175,52 @@ function displayErrors(errors, textArr){
     }else{
         let counter = 0;
         for(let i = 0; i < textArr.length; i++){
-            const words = textArr[i].split(" ")
-            for(let k = 0; k < words.length; k++){
-                if(errors.includes(words[k].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim())){
-                    const tooltip = toTense(words[k])
-                    counter++
-                    result.innerHTML += `<span id="text${counter}" class='incorrect'>${words[k]}</span>` + ' '
-                    document.querySelector(`#text${counter}`).setAttribute('data-tooltip', tooltip)
-                    document.querySelector(`#text${counter}`).style.backgroundColor = '#ff6161'
-                }else{
-                    result.innerHTML += `<span>${words[k]} </span>`
+            if(textArr[i].includes(`“`)){
+                for(let j = i; j < textArr.length; j++){
+                    result.innerHTML += `<span id='has'>${textArr[j]} </span>`
+                    if(textArr[j].includes(`”`)){
+                        i = j
+                        break;
+                    }
+                }
+            }else{
+                const words = textArr[i].split(" ")
+                for(let k = 0; k < words.length; k++){
+                    if(errors.includes(words[k].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim())){
+                        const tooltip = toTense(words[k])
+                        counter++
+                        result.innerHTML += `<span id="text${counter}" class='incorrect'>${words[k]}</span>` + ' '
+                        document.querySelector(`#text${counter}`).setAttribute('data-tooltip', tooltip)
+                        document.querySelector(`#text${counter}`).style.backgroundColor = '#ff6161'
+                    }else{
+                        result.innerHTML += `<span>${words[k]} </span>`
+                    }
                 }
             }
         }
     }
-    result.innerHTML += '<div id="fixwrapper"><button id="fixall">Resolve All Errors</button></div>'
-    errorCount = errors.length
+    result.innerHTML += '<div id="fixwrapper"><button id="fixall">Resolve All Errors</button><button id="copy">Copy text to clipboard</button></div>'
+    outText = document.querySelector('#result').innerText.slice(0, document.querySelector('#result').innerText.length - 41)
+    errorCount = Array.from(document.querySelectorAll('.incorrect')).length
+    errorMessage.innerHTML =  `${errorCount} errors`
     document.querySelectorAll('.incorrect').forEach(element => {
         element.addEventListener('click', correctSentence)
         element.addEventListener('contextmenu', removeCorrection)
     });
     document.querySelector('#fixall').addEventListener('click', resolveAll)
     document.querySelector('body').removeAttribute('id')
+    document.querySelector('#copy').addEventListener('click', function(){
+        updateOutText()
+        navigator.clipboard.writeText(outText)
+        document.querySelector('#copy').innerHTML = 'Copied!'
+        setTimeout(() => {
+            document.querySelector('#copy').innerHTML = 'Copy text to clipboard'
+        }, 2000);
+    })
+}
+
+function updateOutText(){
+    outText = document.querySelector('#result').innerText.slice(0, document.querySelector('#result').innerText.length - 41)
 }
 
 function resolveAll(){
